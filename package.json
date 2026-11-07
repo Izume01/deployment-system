@@ -1,0 +1,29 @@
+{
+  "name": "deployment-system-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini-Render / Railway Cloud-Native Backend PaaS Platform",
+  "workspaces": ["packages/*", "services/*"],
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "prepare": "husky",
+    "test": "bun test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "dev:api": "bun run --filter control-api dev",
+    "dev:proxy": "bun run --filter reverse-proxy dev",
+    "dev:orchestrator": "bun run --filter orchestrator dev",
+    "db:generate": "bun run --filter @deployment/db db:generate",
+    "db:push": "bun run --filter @deployment/db db:push",
+    "db:studio": "bun run --filter @deployment/db db:studio",
+    "doctor": "bun scripts/doctor.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "husky": "^9.1.7",
+    "typescript": "^5.7.2"
+  }
+}

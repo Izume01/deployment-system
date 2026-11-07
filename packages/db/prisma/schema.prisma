@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  STARTING
+  HEALTHY
+  RUNNING
+  FAILED
+  STOPPED
+}
+
+model Project {
+  id            String                @id @default(cuid())
+  name          String
+  slug          String                @unique
+  repoUrl       String
+  branch        String                @default("main")
+  rootDirectory String                @default("./")
+  targetPort    Int                   @default(3000)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  deployments   Deployment[]
+  envVars       EnvironmentVariable[]
+}
+
+model Deployment {
+  id            String           @id @default(cuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  commitHash    String?
+  commitMessage String?
+  status        DeploymentStatus @default(QUEUED)
+  containerId   String?
+  containerUrl  String?
+  errorMessage  String?
+  startedAt     DateTime         @default(now())
+  completedAt   DateTime?
+
+  @@index([projectId])
+}
+
+model EnvironmentVariable {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  isSecret  Boolean @default(false)
+
+  @@unique([projectId, key])
+}

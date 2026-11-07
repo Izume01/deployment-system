@@ -1,0 +1,12 @@
+{
+  "name": "web-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Next.js dashboard ready for initialization in Phase 6'",
+    "build": "echo 'Next.js dashboard ready for initialization in Phase 6'"
+  },
+  "dependencies": {
+    "@deployment/shared": "workspace:*"
+  }
+}

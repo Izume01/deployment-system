@@ -13,6 +13,11 @@ export const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
+  // GCP Configuration
+  GCP_PROJECT_ID: z.string().default('my-paas-project'),
+  GCP_REGION: z.string().default('us-central1'),
+  GCP_ARTIFACT_REGISTRY: z.string().default('cloud-apps'),
+  GCP_SOURCE_BUCKET: z.string().default('paas-build-sources'),
 });
 
 export type PlatformEnv = z.infer<typeof envSchema>;

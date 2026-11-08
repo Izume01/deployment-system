@@ -11,10 +11,12 @@
   "dependencies": {
     "@deployment/db": "workspace:*",
     "@deployment/shared": "workspace:*",
-    "dockerode": "^4.0.4"
+    "@google-cloud/cloudbuild": "^6.4.0",
+    "@google-cloud/run": "^4.2.0",
+    "@google-cloud/storage": "^8.4.0",
+    "simple-git": "^4.0.2"
   },
   "devDependencies": {
-    "@types/dockerode": "^3.3.34",
     "@types/node": "^22.10.1",
     "typescript": "^5.7.2"
   }

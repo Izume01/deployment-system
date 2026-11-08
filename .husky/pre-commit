@@ -1,1 +1,1 @@
-bunx @biomejs/biome check --write --staged
+bunx @biomejs/biome check --write --staged --no-errors-on-unmatched

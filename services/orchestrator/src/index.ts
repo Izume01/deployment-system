@@ -3,6 +3,10 @@ import { CloudBuildClient } from '@google-cloud/cloudbuild';
 import { ServicesClient } from '@google-cloud/run';
 import { Storage } from '@google-cloud/storage';
 
+export * from './uploader';
+export * from './builder';
+export * from './cloner';
+
 const env = getValidatedEnv();
 
 let storageClient: Storage | null = null;

@@ -1,5 +1,6 @@
 import { getValidatedEnv } from '@deployment/shared';
 import { getCloudBuild } from './index';
+import type { DetectedFramework } from './uploader';
 
 const env = getValidatedEnv();
 
@@ -8,6 +9,8 @@ export interface BuildOptions {
   gcsObject: string;
   projectSlug: string;
   deploymentId: string;
+  hasDockerfile?: boolean;
+  detectedFramework?: DetectedFramework;
   customImageTag?: string;
 }
 
@@ -21,12 +24,20 @@ export interface BuildResult {
 
 /**
  * Triggers a container build on Google Cloud Build from a GCS source archive.
- * Compiles the image in the cloud and pushes to Google Artifact Registry.
+ * If no Dockerfile was provided in the repository, injects a hardened
+ * multi-stage Dockerfile step in the build environment before compiling.
  */
 export async function triggerCloudBuild(
   options: BuildOptions,
 ): Promise<BuildResult> {
-  const { gcsBucket, gcsObject, projectSlug, deploymentId } = options;
+  const {
+    gcsBucket,
+    gcsObject,
+    projectSlug,
+    deploymentId,
+    hasDockerfile = true,
+    detectedFramework,
+  } = options;
 
   // Destination image in Google Artifact Registry
   const targetImage =
@@ -34,6 +45,83 @@ export async function triggerCloudBuild(
     `${env.GCP_REGION}-docker.pkg.dev/${env.GCP_PROJECT_ID}/${env.GCP_ARTIFACT_REGISTRY}/${projectSlug}:${deploymentId}`;
 
   console.log(`🔨 [CloudBuild] Requesting build for ${targetImage}...`);
+
+  const steps: Array<{ name: string; args: string[] }> = [];
+
+  // If repo has no Dockerfile, inject an auto-generated Dockerfile step inside Cloud Build
+  if (!hasDockerfile) {
+    if (detectedFramework === 'node') {
+      console.log(
+        '📦 [CloudBuild] Injecting auto-generated Node.js Dockerfile step...',
+      );
+      steps.push({
+        name: 'bash',
+        args: [
+          '-c',
+          `cat << 'EOF' > Dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev || npm install
+COPY . .
+ENV PORT=8080
+EXPOSE 8080
+CMD ["npm", "start"]
+EOF`,
+        ],
+      });
+    } else if (detectedFramework === 'python') {
+      console.log(
+        '🐍 [CloudBuild] Injecting auto-generated Python Dockerfile step...',
+      );
+      steps.push({
+        name: 'bash',
+        args: [
+          '-c',
+          `cat << 'EOF' > Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt* pyproject.toml* ./
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+COPY . .
+ENV PORT=8080
+EXPOSE 8080
+CMD ["python", "main.py"]
+EOF`,
+        ],
+      });
+    } else if (detectedFramework === 'go') {
+      console.log(
+        '🐹 [CloudBuild] Injecting auto-generated Go Dockerfile step...',
+      );
+      steps.push({
+        name: 'bash',
+        args: [
+          '-c',
+          `cat << 'EOF' > Dockerfile
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum* ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
+FROM alpine:3.19
+WORKDIR /app
+COPY --from=builder /app/server .
+ENV PORT=8080
+EXPOSE 8080
+CMD ["./server"]
+EOF`,
+        ],
+      });
+    }
+  }
+
+  // Docker build step
+  steps.push({
+    name: 'gcr.io/cloud-builders/docker',
+    args: ['build', '-t', targetImage, '.'],
+  });
 
   const cloudBuild = getCloudBuild();
 
@@ -47,12 +135,7 @@ export async function triggerCloudBuild(
           object: gcsObject,
         },
       },
-      steps: [
-        {
-          name: 'gcr.io/cloud-builders/docker',
-          args: ['build', '-t', targetImage, '.'],
-        },
-      ],
+      steps,
       images: [targetImage],
       options: {
         logging: 'CLOUD_LOGGING_ONLY',

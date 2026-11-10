@@ -69,10 +69,15 @@ export async function orchestrateDeployment(
   const hasDockerfile = uploadResult.detection?.hasDockerfile ?? true;
   const detectedLanguage = uploadResult.detection?.language || '';
 
-  // Auto-synthesize Dockerfile for unsupported buildpack runtimes (e.g. Rust) or when requested
+  // Auto-synthesize Dockerfile for unsupported buildpack runtimes (e.g. Rust, Bun, Deno) or when requested
   let synthesizedDockerfile: string | undefined;
   if (!hasDockerfile) {
-    if (detectedLanguage === 'rust' || options.useLeanTemplate) {
+    if (
+      detectedLanguage === 'rust' ||
+      detectedLanguage === 'bun' ||
+      detectedLanguage === 'deno' ||
+      options.useLeanTemplate
+    ) {
       synthesizedDockerfile =
         getDockerfileTemplate(detectedLanguage) ?? undefined;
       if (synthesizedDockerfile) {

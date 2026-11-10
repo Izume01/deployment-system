@@ -86,4 +86,24 @@ describe('Runtime & Framework Detector', () => {
     expect(result.language).toBe('rust');
     expect(result.target).toBe('cloud-run');
   });
+
+  it('should detect Bun project with Cloud Run target', () => {
+    const result = detectRuntime({
+      files: ['package.json', 'bun.lockb', 'src/index.ts'],
+    });
+
+    expect(result.language).toBe('bun');
+    expect(result.target).toBe('cloud-run');
+    expect(result.buildCommand).toBe('bun install');
+  });
+
+  it('should detect Deno project with Cloud Run target', () => {
+    const result = detectRuntime({
+      files: ['deno.json', 'main.ts'],
+    });
+
+    expect(result.language).toBe('deno');
+    expect(result.target).toBe('cloud-run');
+    expect(result.buildCommand).toBe('deno cache main.ts');
+  });
 });

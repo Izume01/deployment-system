@@ -109,3 +109,30 @@ USER appuser
 EXPOSE 8080
 CMD ["npm", "start"]
 `;
+
+export const BUN_DOCKERFILE = `FROM oven/bun:1-alpine AS builder
+WORKDIR /app
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile --production || bun install
+COPY . .
+
+FROM oven/bun:1-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
+USER bun
+COPY --from=builder /app ./
+EXPOSE 8080
+CMD ["bun", "run", "start"]
+`;
+
+export const DENO_DOCKERFILE = `FROM denoland/deno:alpine AS runner
+WORKDIR /app
+USER deno
+COPY deno.json* deno.lock* ./
+COPY . .
+RUN deno cache main.ts || deno cache server.ts || true
+ENV PORT=8080
+EXPOSE 8080
+CMD ["run", "--allow-net", "--allow-env", "main.ts"]
+`;

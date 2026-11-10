@@ -38,6 +38,14 @@ export const LANGUAGE_RULES: FileDetectionRule[] = [
     startCommand: './target/release/app',
     confidence: 0.9,
   },
+  {
+    language: 'deno',
+    target: 'cloud-run',
+    files: ['deno.json', 'deno.jsonc', 'deno.lock'],
+    buildCommand: 'deno cache main.ts',
+    startCommand: 'deno run --allow-net main.ts',
+    confidence: 0.95,
+  },
 ];
 
 export function matchesAnyFile(

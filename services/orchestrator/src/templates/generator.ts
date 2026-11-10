@@ -1,4 +1,6 @@
 import {
+  BUN_DOCKERFILE,
+  DENO_DOCKERFILE,
   GO_DOCKERFILE,
   NEXTJS_DOCKERFILE,
   NODE_API_DOCKERFILE,
@@ -45,6 +47,18 @@ export const TEMPLATE_METADATA: Record<TemplateName, TemplateInfo> = {
     description: 'Production Node.js API runner on Alpine',
     estimatedSizeMb: 45,
   },
+  bun: {
+    name: 'bun',
+    language: 'Bun',
+    description: 'Fast Bun runtime on Alpine Linux',
+    estimatedSizeMb: 50,
+  },
+  deno: {
+    name: 'deno',
+    language: 'Deno',
+    description: 'Secure Deno runtime on Alpine Linux',
+    estimatedSizeMb: 60,
+  },
 };
 
 /**
@@ -76,6 +90,10 @@ export function getDockerfileTemplate(
     case 'express':
     case 'fastify':
       return NODE_API_DOCKERFILE;
+    case 'bun':
+      return BUN_DOCKERFILE;
+    case 'deno':
+      return DENO_DOCKERFILE;
     default:
       return null;
   }

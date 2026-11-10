@@ -36,7 +36,19 @@ export function detectRuntime(options: DetectionOptions): DetectionResult {
     };
   }
 
-  // 2. Node ecosystem detection
+  // 2. Bun ecosystem detection (bun.lock or bun.lockb)
+  if (files.includes('bun.lockb') || files.includes('bun.lock')) {
+    return {
+      language: 'bun',
+      target: 'cloud-run',
+      hasDockerfile: false,
+      buildCommand: 'bun install',
+      startCommand: 'bun run start',
+      confidence: 0.95,
+    };
+  }
+
+  // 3. Node ecosystem detection
   if (files.includes('package.json')) {
     if (packageManifest) {
       return analyzePackageJson(packageManifest);

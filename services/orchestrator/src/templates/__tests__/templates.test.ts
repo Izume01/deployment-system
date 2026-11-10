@@ -48,6 +48,22 @@ describe('Production Dockerfile Templates', () => {
     expect(template).toContain('npm');
   });
 
+  it('should return Bun multi-stage Dockerfile', () => {
+    const template = getDockerfileTemplate('bun');
+    expect(template).not.toBeNull();
+    expect(template).toContain('FROM oven/bun:1-alpine');
+    expect(template).toContain('bun install');
+    expect(template).toContain('USER bun');
+  });
+
+  it('should return Deno runner Dockerfile', () => {
+    const template = getDockerfileTemplate('deno');
+    expect(template).not.toBeNull();
+    expect(template).toContain('FROM denoland/deno:alpine');
+    expect(template).toContain('--allow-net');
+    expect(template).toContain('USER deno');
+  });
+
   it('should return null for unsupported language', () => {
     const template = getDockerfileTemplate('cobol');
     expect(template).toBeNull();

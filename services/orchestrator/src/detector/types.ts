@@ -6,6 +6,8 @@ export type RuntimeLanguage =
   | 'python'
   | 'go'
   | 'rust'
+  | 'bun'
+  | 'deno'
   | 'unknown';
 
 export type DeploymentTarget = 'cloud-run' | 'static-gcs' | 'custom-docker';

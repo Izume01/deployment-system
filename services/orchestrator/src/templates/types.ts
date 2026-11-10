@@ -4,7 +4,9 @@ export type TemplateName =
   | 'python'
   | 'next'
   | 'static-spa'
-  | 'node-api';
+  | 'node-api'
+  | 'bun'
+  | 'deno';
 
 export interface TemplateInfo {
   name: TemplateName;

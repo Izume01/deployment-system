@@ -6,6 +6,7 @@ import { Storage } from '@google-cloud/storage';
 export * from './uploader';
 export * from './builder';
 export * from './cloner';
+export * from './detector';
 
 const env = getValidatedEnv();
 

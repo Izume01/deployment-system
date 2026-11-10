@@ -6,10 +6,14 @@ async function runPipelineTest() {
 
   try {
     const result = await orchestrateDeployment({
-      repoUrl: 'https://github.com/heroku/node-js-getting-started',
-      branch: 'main',
-      projectSlug: 'express-sample',
+      repoUrl: 'https://github.com/alexellis/expressjs-docker',
+      branch: 'master',
+      projectSlug: 'dockerfile-sample',
       deploymentId,
+      envVars: {
+        NODE_ENV: 'production',
+        http_port: '8080',
+      },
     });
 
     console.log('[Test] Deployment succeeded!');
@@ -22,13 +26,13 @@ async function runPipelineTest() {
     );
 
     if (result.serviceUrl) {
-      console.log(`[Test] Probing ${result.serviceUrl}...`);
-      const response = await fetch(result.serviceUrl);
+      console.log(`[Test] Probing ${result.serviceUrl}/health...`);
+      const response = await fetch(`${result.serviceUrl}/health`);
       console.log(
         `[Test] HTTP Status: ${response.status} ${response.statusText}`,
       );
       const text = await response.text();
-      console.log(`[Test] Response snippet:\n${text.slice(0, 200)}...\n`);
+      console.log(`[Test] Response: ${text.trim()}\n`);
     }
   } catch (error) {
     console.error('[Test] Deployment pipeline failed:', error);

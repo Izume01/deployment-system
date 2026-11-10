@@ -1,7 +1,7 @@
 import { executeBuild } from './builder';
 import { checkGcpHealth } from './clients';
 import { deployToCloudRun } from './deployer';
-import { streamGitHubTarball } from './uploader';
+import { streamGitHubTarball } from './uploader/streamer';
 
 export * from './clients';
 export * from './uploader';

@@ -18,6 +18,7 @@ export async function executeBuild(
     projectSlug,
     deploymentId,
     hasDockerfile = true,
+    synthesizedDockerfile,
   } = options;
 
   const targetImage =
@@ -26,7 +27,12 @@ export async function executeBuild(
 
   console.log(`[CloudBuild] Requesting build for ${targetImage}`);
 
-  const steps = generateBuildSteps(hasDockerfile, targetImage);
+  const steps = generateBuildSteps(
+    hasDockerfile,
+    targetImage,
+    synthesizedDockerfile,
+  );
+  const isDockerBuild = hasDockerfile || Boolean(synthesizedDockerfile);
   const cloudBuild = getCloudBuild();
 
   const [operation] = await cloudBuild.createBuild({
@@ -39,7 +45,7 @@ export async function executeBuild(
         },
       },
       steps,
-      images: hasDockerfile ? [targetImage] : [],
+      images: isDockerBuild ? [targetImage] : [],
       options: {
         logging: 'CLOUD_LOGGING_ONLY',
       },

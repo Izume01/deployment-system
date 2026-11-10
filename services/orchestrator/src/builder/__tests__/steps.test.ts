@@ -30,4 +30,15 @@ describe('Cloud Build Steps Generator (Cloud Native Buildpack Pattern)', () => {
       '--publish',
     ]);
   });
+
+  it('should generate flatten step with injected Dockerfile + direct docker step when synthesizedDockerfile is provided', () => {
+    const synthesized = 'FROM alpine:latest\nCMD ["echo", "test"]';
+    const steps = generateBuildSteps(false, targetImage, synthesized);
+
+    expect(steps.length).toBe(2);
+    expect(steps[0].name).toBe('bash');
+    expect(steps[0].args[1]).toContain('base64 -d > Dockerfile');
+    expect(steps[1].name).toBe('gcr.io/cloud-builders/docker');
+    expect(steps[1].args).toEqual(['build', '-t', targetImage, '.']);
+  });
 });

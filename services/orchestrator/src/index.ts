@@ -1,6 +1,7 @@
 import { executeBuild } from './builder';
 import { checkGcpHealth } from './clients';
 import { deployToCloudRun } from './deployer';
+import { getDockerfileTemplate } from './templates';
 import { streamGitHubTarball } from './uploader/streamer';
 
 export * from './clients';
@@ -9,6 +10,7 @@ export * from './builder';
 export * from './detector';
 export * from './cloner';
 export * from './deployer';
+export * from './templates';
 
 export interface OrchestrateDeploymentOptions {
   repoUrl: string;
@@ -17,6 +19,7 @@ export interface OrchestrateDeploymentOptions {
   deploymentId: string;
   githubToken?: string;
   envVars?: Record<string, string>;
+  useLeanTemplate?: boolean;
 }
 
 export interface OrchestrationResult {
@@ -64,6 +67,21 @@ export async function orchestrateDeployment(
   });
 
   const hasDockerfile = uploadResult.detection?.hasDockerfile ?? true;
+  const detectedLanguage = uploadResult.detection?.language || '';
+
+  // Auto-synthesize Dockerfile for unsupported buildpack runtimes (e.g. Rust) or when requested
+  let synthesizedDockerfile: string | undefined;
+  if (!hasDockerfile) {
+    if (detectedLanguage === 'rust' || options.useLeanTemplate) {
+      synthesizedDockerfile =
+        getDockerfileTemplate(detectedLanguage) ?? undefined;
+      if (synthesizedDockerfile) {
+        console.log(
+          `[Orchestrator] Synthesizing lean multi-stage Dockerfile for ${detectedLanguage}`,
+        );
+      }
+    }
+  }
 
   // 2. Trigger Google Cloud Build
   const buildResult = await executeBuild({
@@ -72,6 +90,7 @@ export async function orchestrateDeployment(
     projectSlug,
     deploymentId,
     hasDockerfile,
+    synthesizedDockerfile,
   });
 
   // 3. Deploy container service to Google Cloud Run

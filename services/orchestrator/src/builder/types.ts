@@ -4,6 +4,7 @@ export interface BuildOptions {
   projectSlug: string;
   deploymentId: string;
   hasDockerfile?: boolean;
+  synthesizedDockerfile?: string;
   customImageTag?: string;
 }
 

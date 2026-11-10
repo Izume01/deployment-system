@@ -10,6 +10,7 @@ import type { CloudBuildStep } from './types';
 export function generateBuildSteps(
   hasDockerfile: boolean,
   targetImage: string,
+  synthesizedDockerfile?: string,
 ): CloudBuildStep[] {
   const steps: CloudBuildStep[] = [
     {
@@ -22,6 +23,19 @@ export function generateBuildSteps(
   ];
 
   if (hasDockerfile) {
+    steps.push({
+      name: 'gcr.io/cloud-builders/docker',
+      args: ['build', '-t', targetImage, '.'],
+    });
+    return steps;
+  }
+
+  if (synthesizedDockerfile) {
+    const encoded = Buffer.from(synthesizedDockerfile).toString('base64');
+    steps[0].args = [
+      '-c',
+      `${steps[0].args[1]}; echo "${encoded}" | base64 -d > Dockerfile`,
+    ];
     steps.push({
       name: 'gcr.io/cloud-builders/docker',
       args: ['build', '-t', targetImage, '.'],

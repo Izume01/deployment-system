@@ -18,4 +18,5 @@ export interface BuildResult {
 export interface CloudBuildStep {
   name: string;
   args: string[];
+  entrypoint?: string;
 }

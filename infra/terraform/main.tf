@@ -58,3 +58,46 @@ resource "google_project_iam_member" "roles" {
 
   depends_on = [google_project_service.apis, google_service_account.pass_engine]
 }
+
+# Cloud Build execution service accounts permissions
+resource "google_storage_bucket_iam_member" "source_bucket_compute" {
+  bucket = google_storage_bucket.source.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:351799168147-compute@developer.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "source_bucket_cloudbuild_sa" {
+  bucket = google_storage_bucket.source.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:351799168147@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_compute_storage" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:351799168147-compute@developer.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_compute_artifact" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:351799168147-compute@developer.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_compute_logs" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:351799168147-compute@developer.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_sa_storage" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:351799168147@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_sa_artifact" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:351799168147@cloudbuild.gserviceaccount.com"
+}

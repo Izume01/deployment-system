@@ -39,7 +39,7 @@ export async function executeBuild(
         },
       },
       steps,
-      images: [targetImage],
+      images: hasDockerfile ? [targetImage] : [],
       options: {
         logging: 'CLOUD_LOGGING_ONLY',
       },
@@ -51,11 +51,16 @@ export async function executeBuild(
   );
 
   const [response] = await operation.promise();
-  const status = response.status?.toString() || 'UNKNOWN';
+  const rawStatus = response.status;
+  const isSuccess =
+    rawStatus === 'SUCCESS' ||
+    rawStatus === 3 ||
+    rawStatus?.toString() === '3';
+  const status = isSuccess ? 'SUCCESS' : rawStatus?.toString() || 'UNKNOWN';
 
   console.log(`[CloudBuild] Build finished with status: ${status}`);
 
-  if (status !== 'SUCCESS') {
+  if (!isSuccess) {
     throw new Error(
       `Google Cloud Build failed with status: ${status}. Logs: ${response.logUrl}`,
     );

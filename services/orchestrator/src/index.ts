@@ -1,54 +1,92 @@
-import { getValidatedEnv } from '@deployment/shared';
-import { CloudBuildClient } from '@google-cloud/cloudbuild';
-import { ServicesClient } from '@google-cloud/run';
-import { Storage } from '@google-cloud/storage';
+import { executeBuild } from './builder';
+import { checkGcpHealth } from './clients';
+import { streamGitHubTarball } from './uploader';
 
+export * from './clients';
 export * from './uploader';
 export * from './builder';
-export * from './cloner';
 export * from './detector';
+export * from './cloner';
 
-const env = getValidatedEnv();
-
-let storageClient: Storage | null = null;
-let cloudBuildClient: CloudBuildClient | null = null;
-let cloudRunClient: ServicesClient | null = null;
-
-export function getStorage(): Storage {
-  if (!storageClient) {
-    storageClient = new Storage({
-      projectId: env.GCP_PROJECT_ID,
-    });
-  }
-  return storageClient;
+export interface OrchestrateDeploymentOptions {
+  repoUrl: string;
+  branch?: string;
+  projectSlug: string;
+  deploymentId: string;
+  githubToken?: string;
 }
 
-export function getCloudBuild(): CloudBuildClient {
-  if (!cloudBuildClient) {
-    cloudBuildClient = new CloudBuildClient({
-      projectId: env.GCP_PROJECT_ID,
-    });
-  }
-  return cloudBuildClient;
+export interface OrchestrationResult {
+  deploymentId: string;
+  projectSlug: string;
+  imageTag: string;
+  buildId: string;
+  commitHash?: string;
+  author?: string;
+  detectedLanguage: string;
+  target: string;
+  durationMs: number;
 }
 
-export function getCloudRun(): ServicesClient {
-  if (!cloudRunClient) {
-    cloudRunClient = new ServicesClient({
-      projectId: env.GCP_PROJECT_ID,
-    });
-  }
-  return cloudRunClient;
-}
+/**
+ * End-to-end deployment pipeline:
+ * 1. Inspects repository & streams source tarball directly to GCS (Zero local disk).
+ * 2. Compiles container image via Google Cloud Build using Nixpacks / custom Dockerfile.
+ */
+export async function orchestrateDeployment(
+  options: OrchestrateDeploymentOptions,
+): Promise<OrchestrationResult> {
+  const startTime = Date.now();
+  const {
+    repoUrl,
+    branch = 'main',
+    projectSlug,
+    deploymentId,
+    githubToken,
+  } = options;
 
-export async function checkGcpHealth(): Promise<boolean> {
   console.log(
-    `☁️ GCP Orchestrator configured for Project: ${env.GCP_PROJECT_ID} (Region: ${env.GCP_REGION})`,
+    `[Orchestrator] Starting deployment pipeline for ${projectSlug} (${deploymentId})`,
   );
-  return true;
+
+  // 1. Stream GitHub archive directly to GCS with framework detection
+  const uploadResult = await streamGitHubTarball({
+    repoUrl,
+    branch,
+    deploymentId,
+    githubToken,
+  });
+
+  const hasDockerfile = uploadResult.detection?.hasDockerfile ?? true;
+
+  // 2. Trigger Google Cloud Build
+  const buildResult = await executeBuild({
+    gcsBucket: uploadResult.bucket,
+    gcsObject: uploadResult.object,
+    projectSlug,
+    deploymentId,
+    hasDockerfile,
+  });
+
+  const durationMs = Date.now() - startTime;
+  console.log(
+    `[Orchestrator] Build completed in ${(durationMs / 1000).toFixed(1)}s: ${buildResult.imageTag}`,
+  );
+
+  return {
+    deploymentId,
+    projectSlug,
+    imageTag: buildResult.imageTag,
+    buildId: buildResult.buildId,
+    commitHash: uploadResult.commitHash,
+    author: uploadResult.author,
+    detectedLanguage: uploadResult.detection?.language || 'unknown',
+    target: uploadResult.detection?.target || 'cloud-run',
+    durationMs,
+  };
 }
 
 if (import.meta.main) {
-  console.log('⚡ Initializing GCP Cloud-Native Orchestrator...');
+  console.log('[Orchestrator] Service initialized.');
   await checkGcpHealth();
 }

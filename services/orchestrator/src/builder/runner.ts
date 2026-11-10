@@ -53,9 +53,7 @@ export async function executeBuild(
   const [response] = await operation.promise();
   const rawStatus = response.status;
   const isSuccess =
-    rawStatus === 'SUCCESS' ||
-    rawStatus === 3 ||
-    rawStatus?.toString() === '3';
+    rawStatus === 'SUCCESS' || rawStatus === 3 || rawStatus?.toString() === '3';
   const status = isSuccess ? 'SUCCESS' : rawStatus?.toString() || 'UNKNOWN';
 
   console.log(`[CloudBuild] Build finished with status: ${status}`);

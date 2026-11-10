@@ -1,5 +1,6 @@
 import { executeBuild } from './builder';
 import { checkGcpHealth } from './clients';
+import { deployToCloudRun } from './deployer';
 import { streamGitHubTarball } from './uploader';
 
 export * from './clients';
@@ -7,6 +8,7 @@ export * from './uploader';
 export * from './builder';
 export * from './detector';
 export * from './cloner';
+export * from './deployer';
 
 export interface OrchestrateDeploymentOptions {
   repoUrl: string;
@@ -14,6 +16,7 @@ export interface OrchestrateDeploymentOptions {
   projectSlug: string;
   deploymentId: string;
   githubToken?: string;
+  envVars?: Record<string, string>;
 }
 
 export interface OrchestrationResult {
@@ -21,6 +24,7 @@ export interface OrchestrationResult {
   projectSlug: string;
   imageTag: string;
   buildId: string;
+  serviceUrl?: string;
   commitHash?: string;
   author?: string;
   detectedLanguage: string;
@@ -31,7 +35,8 @@ export interface OrchestrationResult {
 /**
  * End-to-end deployment pipeline:
  * 1. Inspects repository & streams source tarball directly to GCS (Zero local disk).
- * 2. Compiles container image via Google Cloud Build using Nixpacks / custom Dockerfile.
+ * 2. Compiles container image via Google Cloud Build using Buildpacks / custom Dockerfile.
+ * 3. Deploys container image to Google Cloud Run with scale-to-zero and public HTTPS URL.
  */
 export async function orchestrateDeployment(
   options: OrchestrateDeploymentOptions,
@@ -43,6 +48,7 @@ export async function orchestrateDeployment(
     projectSlug,
     deploymentId,
     githubToken,
+    envVars,
   } = options;
 
   console.log(
@@ -68,9 +74,21 @@ export async function orchestrateDeployment(
     hasDockerfile,
   });
 
+  // 3. Deploy container service to Google Cloud Run
+  let serviceUrl: string | undefined;
+  if (uploadResult.detection?.target !== 'static-gcs') {
+    const deployResult = await deployToCloudRun({
+      imageTag: buildResult.imageTag,
+      serviceName: projectSlug,
+      deploymentId,
+      envVars,
+    });
+    serviceUrl = deployResult.serviceUrl;
+  }
+
   const durationMs = Date.now() - startTime;
   console.log(
-    `[Orchestrator] Build completed in ${(durationMs / 1000).toFixed(1)}s: ${buildResult.imageTag}`,
+    `[Orchestrator] Pipeline finished in ${(durationMs / 1000).toFixed(1)}s. URL: ${serviceUrl || 'N/A'}`,
   );
 
   return {
@@ -78,6 +96,7 @@ export async function orchestrateDeployment(
     projectSlug,
     imageTag: buildResult.imageTag,
     buildId: buildResult.buildId,
+    serviceUrl,
     commitHash: uploadResult.commitHash,
     author: uploadResult.author,
     detectedLanguage: uploadResult.detection?.language || 'unknown',

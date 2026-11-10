@@ -42,10 +42,12 @@ export async function deployToCloudRun(
 
   console.log(`[Deployer] Preparing Cloud Run deployment for ${serviceName}`);
 
-  const formattedEnv = Object.entries(envVars).map(([name, value]) => ({
-    name,
-    value,
-  }));
+  const formattedEnv = Object.entries(envVars)
+    .filter(([name]) => name.toUpperCase() !== 'PORT')
+    .map(([name, value]) => ({
+      name,
+      value,
+    }));
 
   const serviceConfig = {
     template: {
@@ -58,7 +60,6 @@ export async function deployToCloudRun(
           },
           env: [
             ...formattedEnv,
-            { name: 'PORT', value: String(port) },
             { name: 'DEPLOYMENT_ID', value: deploymentId },
           ],
         },

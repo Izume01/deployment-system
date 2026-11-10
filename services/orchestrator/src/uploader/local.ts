@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { getValidatedEnv } from '@deployment/shared';
-import { getStorage } from '../index';
+import { getStorage } from '../clients';
 import type { UploadResult, UploadSourceOptions } from './types';
 
 const execAsync = promisify(exec);

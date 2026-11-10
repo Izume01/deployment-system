@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { getValidatedEnv } from '@deployment/shared';
+import { getStorage } from '../clients';
 import { detectRuntime } from '../detector';
-import { getStorage } from '../index';
 import { fetchGitHubCommit, parseGitHubUrl } from './github';
 import type { StreamRepoOptions, UploadResult } from './types';
 

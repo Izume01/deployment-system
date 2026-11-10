@@ -1,5 +1,5 @@
 import { getValidatedEnv } from '@deployment/shared';
-import { getCloudBuild } from '../index';
+import { getCloudBuild } from '../clients';
 import { generateBuildSteps } from './steps';
 import type { BuildOptions, BuildResult } from './types';
 

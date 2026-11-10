@@ -13,7 +13,7 @@
     "typecheck": "bun run --filter '*' typecheck",
     "dev:api": "bun run --filter control-api dev",
     "dev:proxy": "bun run --filter reverse-proxy dev",
-    "dev:orchestrator": "bun run --filter orchestrator dev",
+    "dev:orchestrator": "bun run --filter @deployment/orchestrator dev",
     "db:generate": "bun run --filter @deployment/db db:generate",
     "db:push": "bun run --filter @deployment/db db:push",
     "db:studio": "bun run --filter @deployment/db db:studio",

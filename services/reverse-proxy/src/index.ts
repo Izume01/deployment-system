@@ -1,57 +1,18 @@
-import { type RouteEntry, getValidatedEnv } from '@deployment/shared';
-import Fastify from 'fastify';
+import { getValidatedEnv } from '@deployment/shared';
+import { createProxyServer } from './server';
 
-const env = getValidatedEnv();
-const app = Fastify({ logger: true });
-
-// In-memory dynamic routing table: Map<slug, RouteEntry>
-export const routeRegistry = new Map<string, RouteEntry>();
-
-// Health check endpoint
-app.get('/health', async () => {
-  return {
-    status: 'ok',
-    service: 'reverse-proxy',
-    activeRoutes: routeRegistry.size,
-    timestamp: new Date().toISOString(),
-  };
-});
-
-// Internal API to register a route dynamically
-app.post<{ Body: { slug: string; target: string; containerId: string } }>(
-  '/api/routes',
-  async (request, reply) => {
-    const { slug, target, containerId } = request.body;
-    if (!slug || !target) {
-      return reply.status(400).send({ error: 'Missing slug or target' });
-    }
-
-    routeRegistry.set(slug, {
-      slug,
-      target,
-      containerId,
-      isWarm: true,
-      lastActiveAt: new Date(),
-    });
-
-    return { success: true, slug, target };
-  },
-);
-
-const start = async () => {
-  try {
-    await app.listen({ port: env.PROXY_PORT, host: '0.0.0.0' });
-    console.log(
-      `🌐 Reverse Proxy listening on http://0.0.0.0:${env.PROXY_PORT}`,
-    );
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
-};
+export * from './types';
+export * from './router';
+export * from './cache';
+export * from './forwarder';
+export * from './static-handler';
+export * from './server';
 
 if (import.meta.main) {
-  start();
+  const env = getValidatedEnv();
+  createProxyServer({
+    port: env.PROXY_PORT,
+    host: '0.0.0.0',
+    defaultBucket: env.GCP_SOURCE_BUCKET,
+  });
 }
-
-export { app };

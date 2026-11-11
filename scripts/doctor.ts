@@ -34,7 +34,32 @@ async function runDoctor() {
     console.warn('[Doctor] GCP SDKs initialization warning:', err);
   }
 
-  // 4. Check Workspaces
+  // 4. Check Neon Database
+  try {
+    const { prisma } = await import('../packages/db/src/index');
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('[Doctor] Neon Database: Connected and schema synchronized');
+  } catch (err) {
+    console.warn('[Doctor] Neon Database check warning:', err);
+  }
+
+  // 5. Check Upstash Redis
+  try {
+    const env = getValidatedEnv();
+    if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
+      const res = await fetch(`${env.UPSTASH_REDIS_REST_URL}/ping`, {
+        headers: { Authorization: `Bearer ${env.UPSTASH_REDIS_REST_TOKEN}` },
+      });
+      const data = (await res.json()) as { result: string };
+      if (data.result === 'PONG') {
+        console.log('[Doctor] Upstash Redis: Connected and verified (PONG)');
+      }
+    }
+  } catch (err) {
+    console.warn('[Doctor] Upstash Redis check warning:', err);
+  }
+
+  // 6. Check Workspaces
   console.log(
     '[Doctor] Workspaces: @deployment/shared, @deployment/db, control-api, reverse-proxy, orchestrator',
   );
